@@ -26,6 +26,9 @@ module.exports = (robot) ->
   robot.respond /praise ([^ ]*)( (.*))?/i, (msg) ->
     if praiseUser(msg, robot)
       updatePraises(msg, robot)
+  robot.respond /:+1: ([^ ]*)( (.*))?/i, (msg) ->
+    if praiseUser(msg, robot)
+      updatePraises(msg, robot)
   robot.respond /who praised/i, (msg) ->
     getPraises(msg, robot)
 
