@@ -15,7 +15,7 @@
 #   hubot who praised
 #
 # Author:
-#   Marthyn (@Marthyn)
+#   Hgsk (@hgsk)
 
 images = require './data/highfivegifs.json'
 
@@ -26,7 +26,13 @@ module.exports = (robot) ->
   robot.respond /praise ([^ ]*)( (.*))?/i, (msg) ->
     if praiseUser(msg, robot)
       updatePraises(msg, robot)
-  robot.respond /:+1: ([^ ]*)( (.*))?/i, (msg) ->
+  robot.respond /hoge ([^ ]*)( (.*))?/i, (msg) ->
+    if praiseUser(msg, robot)
+      updatePraises(msg, robot)
+  robot.hear /\+1 ([^ ]*)( (.*))?/i, (msg) ->
+    if praiseUser(msg, robot)
+      updatePraises(msg, robot)
+  robot.hear /ナイス.* ([^ ]*)( (.*))?/i, (msg) ->
     if praiseUser(msg, robot)
       updatePraises(msg, robot)
   robot.respond /who praised/i, (msg) ->
@@ -35,7 +41,7 @@ module.exports = (robot) ->
 
 praiseUser = (msg, robot) ->
   user = msg.match[1].replace(/@?(.*)/, '$1')
-  message = msg.match[3]
+  message = if msg.match[3] then msg.match[3] else ''
   current_user = msg.message.user.name
   if user == current_user
     msg.send "you can’t high five yourself. that’s just clapping"
@@ -44,7 +50,8 @@ praiseUser = (msg, robot) ->
     highfive = msg.random images
     praise = msg.random praises(user)
     msg.send highfive
-    msg.send "#{current_user} high fives #{user}.#{if message then " #{message}" else ""}"
+    robot.logger.info {"praiser": current_user, "praisee": user, "message": message}
+    msg.send "#{current_user} が #{user}を褒めました."
     msg.send praise
     return true
 
