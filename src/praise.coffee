@@ -1,5 +1,5 @@
 # Description:
-#   Praise
+#  素直になれないあなたに代わって賞賛の言葉を述べる
 #
 # Dependencies:
 #   None
@@ -8,33 +8,42 @@
 #   None
 #
 # Commands:
-#   hubot high five @hubot for being awesome
-#   hubot high five @hubot
-#   hubot praise @hubot for just being there when i need her
-#   hubot praise @hubot
-#   hubot who praised
+#   :good @[account] [message] -  賞賛の言葉を述べます
+#   (y) @[account] [message] - 賞賛の言葉を述べます
+#   +1 @[account] [message] - 賞賛の言葉を述べます
+#   :+1: @[account] [message] - 賞賛の言葉を述べます
+#
+#   hubot who praised - 褒めた履歴(いいねログ)を見る
+#
+# Events:
+#   praised
+#     label: "praise",
+#     sender: current_user,
+#     receiver: user,
+#     message: message
 #
 # Author:
 #   Hgsk (@hgsk)
 
-images = require './data/highfivegifs.json'
 
 module.exports = (robot) ->
-  robot.respond /high five ([^ ]*)( (.*))?/i, (msg) ->
+
+  robot.hear /^:good @([^ ]*)( (.*))?/i, (msg) ->
     if praiseUser(msg, robot)
       updatePraises(msg, robot)
-  robot.respond /praise ([^ ]*)( (.*))?/i, (msg) ->
+
+  robot.hear /\(y\) @([^ ]*)( (.*))?/i, (msg) ->
     if praiseUser(msg, robot)
       updatePraises(msg, robot)
-  robot.respond /hoge ([^ ]*)( (.*))?/i, (msg) ->
+
+  robot.hear /^:+1: @([^ ]*)( (.*))?/i, (msg) ->
     if praiseUser(msg, robot)
       updatePraises(msg, robot)
-  robot.hear /\+1 ([^ ]*)( (.*))?/i, (msg) ->
+
+  robot.hear /^\+1 @([^ ]*)( (.*))?/i, (msg) ->
     if praiseUser(msg, robot)
       updatePraises(msg, robot)
-  robot.hear /ナイス.* ([^ ]*)( (.*))?/i, (msg) ->
-    if praiseUser(msg, robot)
-      updatePraises(msg, robot)
+
   robot.respond /who praised/i, (msg) ->
     getPraises(msg, robot)
 
@@ -43,33 +52,27 @@ praiseUser = (msg, robot) ->
   user = msg.match[1].replace(/@?(.*)/, '$1')
   message = if msg.match[3] then msg.match[3] else ''
   current_user = msg.message.user.name
+  today = new Date().toLocaleString()
+
   if user == current_user
-    msg.send "you can’t high five yourself. that’s just clapping"
+    msg.send "#{current_user}さん が自分にいいねしました"
     return false
   else
-    highfive = msg.random images
-    praise = msg.random praises(user)
-    msg.send highfive
-    robot.logger.info {"praiser": current_user, "praisee": user, "message": message}
-    msg.send "#{current_user} が #{user}を褒めました."
-    msg.send praise
-    return true
+    room =  process.env.PRAISE_NOTIFY_ROOM ? msg.envelope.room
 
-praises = (user) ->
-  return [
-    "Keep on rocking, #{user}!",
-    "Keep up the great work, #{user}!",
-    "You're awesome, #{user}!",
-    "You're doing good work, #{user}!",
-    "You're the best, #{user}",
-    "Never stop doing what you do #{user}, it's paying off!",
-    "Thanks so much, you've been amazing #{user}!",
-    "How many people does it take to change a lightbulb? Nvm #{user} changed 100 before you even responded!",
-    "Your work is phenomenal, #{user}!",
-    "You are changing lives with your work, #{user}!",
-    "The world is a better place with you around, #{user}",
-    "Is there anything you can't do #{user}? Wow!"
-  ]
+    info = {
+      label: "praise",
+      receiver: user,
+      sender: current_user,
+      message: message,
+      date: today
+    }
+
+    robot.logger.info info
+    robot.messageRoom room, "#{current_user}さん が #{user}さん にいいねしました."
+    robot.emit "praised", info
+
+    return true
 
 updatePraises = (msg, robot) ->
   currentPraises = robot.brain.get('praises')
@@ -91,12 +94,12 @@ updatePraises = (msg, robot) ->
   robot.brain.save
 
 getPraises = (msg, robot) ->
-  msg.send "ALL PRAISES EVER"
+  msg.send "いいねログ"
   message = ""
   allPraises = robot.brain.get('praises')
   if allPraises
     for praise in allPraises
-      message += "#{praise.sender} sent a praise for #{if praise.message then " #{praise.message}" else "awesomeness"} to #{praise.receiver} on #{praise.date} \n\r";
+      message += "#{praise.date} #{praise.sender}さん が #{praise.receiver}さん にいいねしました \n\r";
     msg.send message
   else
-    msg.send "none"
+    msg.send "いいねの履歴はありません"
